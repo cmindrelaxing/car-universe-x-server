@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -31,17 +31,55 @@ async function run() {
     const carCollection = client.db('carDB').collection('car');
 
     // ----------------------------------------------------------------
-
+    // find all car
     app.get('/cars', async(req, res) => {
         const cursor = carCollection.find();
         const result = await cursor.toArray();
         res.send(result);
     });
 
+    // update the car info
+    app.get('/cars/:id', async(req, res) => {
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)};
+        const result = await carCollection.findOne(query);
+        res.send(result);
+    });
+
+    // add new car
     app.post('/cars', async(req, res) => {
         const newCar = req.body;
         console.log(newCar);
         const result = await carCollection.insertOne(newCar);
+        res.send(result);
+    });
+
+    // update car information
+    app.put('/cars/:id', async(req, res) => {
+        const id = req.params.id;
+        const filter = {_id: new ObjectId(id)};
+        const options = { upsert: true };
+        const updatedCar = req.body;
+        const car = {
+          $set: {
+            name: updatedCar.name,
+            category: updatedCar.category,
+            price: updatedCar.price,
+            description: updatedCar.description,
+            rating: updatedCar.rating,
+            photo: updatedCar.photo,
+          },
+        };
+
+        const result = await carCollection.updateOne(filter, car, options);
+        res.send(result);
+    });
+
+    // delete the car from the database
+    app.delete('/cars/:id', async(req, res) => {
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)};
+        const result = await carCollection.deleteOne(query);
         res.send(result);
     });
     // ----------------------------------------------------------------
